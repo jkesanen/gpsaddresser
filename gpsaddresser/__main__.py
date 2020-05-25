@@ -4,8 +4,11 @@ import os
 import shutil
 import sys
 
+import multiprocessing
+
 from gpsaddresser import GpsAddresser
 from gpsaddresser import location
+
 
 class destination_directory(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
@@ -17,8 +20,9 @@ class destination_directory(argparse.Action):
         else:
             raise argparse.ArgumentTypeError("destination_directory:{0} is not a writable dir".format(path))
 
-def main():
-    ap = argparse.ArgumentParser(description="GPS Track Addresser")#, version %s" % (__version__))
+
+if __name__ == '__main__':
+    ap = argparse.ArgumentParser(description="GPS Track Addresser")
 
     address_group = ap.add_argument_group('address')
     address_group.add_argument('-s', '--start-address', type=str, help='Starting street address')
@@ -104,17 +108,20 @@ def main():
         logger.error("A query to convert an address to location coordinates failed.")
         sys.exit(3)
 
-    matches = []
-
-    for inputfile in args.files:
-        if (g.is_file_within_distance(inputfile, start_location, end_location, args.distance,
-                                           via_location, args.via_distance)):
-            logger.info("Matches: {0}".format(inputfile))
-            matches.append(inputfile)
+    multiprocessing.set_start_method('spawn')
+    manager = multiprocessing.Manager()
+    matches = manager.list()
+    with multiprocessing.Pool(processes=multiprocessing.cpu_count()) as pool:
+        from gpsaddresser.worker import worker
+        [pool.apply_async(worker, (g, matches, file, start_location, end_location, args.distance, via_location, args.via_distance)) for file in args.files]
+        pool.close()
+        pool.join()
 
     if not matches:
         logger.warning("No matches")
         sys.exit(1)
+
+    [print("Matches: {0}".format(file)) for file in matches]
 
     if args.copy:
         logger.debug("Copying matching files to {0}".format(args.copy))
@@ -128,6 +135,3 @@ def main():
             logger.info("Moving {0} to {1}".format(f, args.copy))
             shutil.move(f, args.copy)
 
-
-if __name__ == "__main__":
-    main()
