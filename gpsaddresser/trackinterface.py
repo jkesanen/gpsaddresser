@@ -18,5 +18,9 @@ class TrackInterface:
         raise NotImplementedError("This is an abc class.")
 
     @abstractmethod
+    def next_location(self) -> Location:
+        raise NotImplementedError("This is an abc class.")
+
+    @abstractmethod
     def location_on_track(self, location: Location, distance: int) -> bool:
         raise NotImplementedError("This is an abc class.")

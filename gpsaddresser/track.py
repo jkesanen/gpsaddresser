@@ -1,4 +1,4 @@
-from gpsaddresser.location import Location
+from gpsaddresser.location import Location, location_distance_meters
 
 class Track:
     class NotSupportedFormat(Exception):
@@ -25,10 +25,9 @@ class Track:
         return self.track.end_location()
 
     def location_on_track(self, location: Location, max_distance: float) -> bool:
-        for loc in self.track.next_location():
-            d = location_distance_meters(location, loc)
-            print(d)
-            if d <= max_distance:
+        for track_point in self.track.next_location():
+            distance = location_distance_meters(location, track_point)
+            if distance <= max_distance:
                 return True
 
         return False

@@ -54,7 +54,6 @@ class TrackFit(TrackInterface):
             location = record_location(record)
 
             if location:
-                print(location)
                 yield location
 
         return None
